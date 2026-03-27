@@ -21,7 +21,7 @@ class OAEConfig:
     conv_stride: int = 3
     dropout: float = 0.15
     n_age_groups: int = 7
-    age_noise_sigma: float = 0.03    # noise added to z_age before reg/class
+    age_noise_sigma: float = 0.02    # noise added to z_age before reg/class
     tau: float = 1.5
 
 

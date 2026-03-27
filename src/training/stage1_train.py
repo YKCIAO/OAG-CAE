@@ -161,7 +161,7 @@ def train_stage1(
                 class_true = age_to_group(age_true)
 
             loss, log = loss_fn(
-                recon=recon, x=x, mu=mu, age_true=age_true,
+                recon=recon, x=x, mu=mu, age_true=age_true + torch.randn_like(age_true)*0.5,
                 class_pred_logits=logits, class_true=class_true,
                 z_age=z_age, z_noise=z_noise, mask=mask,
                 w_recon=cfg.w_recon, w_age=cfg.w_age, w_ortho=cfg.w_ortho, w_class=cfg.w_class,

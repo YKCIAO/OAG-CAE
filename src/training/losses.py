@@ -99,7 +99,7 @@ def orthogonal_guided_loss(
     # Make shapes robust for huber
     age_true_f = age_true.float().view(-1)
     mu_f = mu.float().view(-1)
-    age_loss = F.l1_loss(mu_f, age_true_f)
+    age_loss = F.huber_loss(mu_f, age_true_f)
 
     # --- classification loss (standard) ---
     # class_true expected as integer class index tensor shape (B,)

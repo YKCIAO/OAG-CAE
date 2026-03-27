@@ -34,7 +34,7 @@ def _filter_by_age(
 def build_nested_folds_from_group_paths(
     group_paths: Sequence[Tuple[str, str]],
     val_ratio: float = 0.1,
-    seed: int = 256,
+    seed: int = 111,
     *,
     max_age: float = 95.0 * 12,
 ) -> List[Tuple[np.ndarray, np.ndarray,
@@ -97,7 +97,7 @@ def build_argparser():
     p = argparse.ArgumentParser()
 
     # basic
-    p.add_argument("--seed", type=int, default=2574)
+    p.add_argument("--seed", type=int, default=1024)
     p.add_argument("--device", type=str, default="cuda")
     p.add_argument("--out_dir", type=str, default="/home/bio/PycharmProjects/OAG-/result/")
     p.add_argument("--input_dir", type=str, default="/nfsd/biopetmri4/Users/YikangCao/HCP_project/yk_autoencoder/crossvalid_dataset/")
@@ -108,9 +108,9 @@ def build_argparser():
 
     # loss weights (keep your current defaults)
     p.add_argument("--w_recon", type=float, default=0.1)
-    p.add_argument("--w_age", type=float, default=0.2)
+    p.add_argument("--w_age", type=float, default=0.4)
     p.add_argument("--w_ortho", type=float, default=0.2)
-    p.add_argument("--w_class", type=float, default=0.6)
+    p.add_argument("--w_class", type=float, default=0.75)
 
     return p
 

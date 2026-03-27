@@ -122,7 +122,7 @@ def train_stage2(
 
             with torch.no_grad():
                 z_age, z_noise = encoder.encode(x)
-                noise = torch.randn_like(z_age) * 0.03
+                noise = torch.randn_like(z_age) * 0.02
                 z_age = z_age + noise
                 age_smooth = age_true + torch.randn_like(age_true) * 0.5
             pred = regressor(z_age)  # (B,) or (B,1)

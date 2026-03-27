@@ -37,8 +37,8 @@ class TrainConfig:
 
     # stage2
     epochs_stage2: int = 2000
-    lr_stage2: float = 2e-2
-    wd_stage2: float = 2e-3
+    lr_stage2: float = 3e-2
+    wd_stage2: float = 3e-3
     early_stop_patience: int = 10
     pct_start: float = 0.15
     anneal_strategy: str = "cos"

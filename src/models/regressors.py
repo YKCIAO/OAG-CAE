@@ -127,7 +127,7 @@ class ConvAgeRegressor(nn.Module):
             blocks.append(
                 nn.Sequential(
                     nn.Conv1d(cfg.hidden_channels, cfg.hidden_channels, kernel_size=1, padding=0),
-                    #nn.Dropout(cfg.dropout),
+                    nn.Dropout(cfg.dropout),
                     nn.GELU(),
                     nn.Conv1d(cfg.hidden_channels, cfg.hidden_channels, kernel_size=k, padding=k // 2, bias=True),
                     nn.GELU(),
