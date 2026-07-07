@@ -132,12 +132,15 @@ def orthogonal_guided_loss(
     w_age_dyn = w_age
     w_corr_dyn = w_corr
 
+    loss_zage_decor = latent_dimension_decorrelation_loss(z_age)
+    decor_res_loss = residual_age_decorrelation_loss(z_noise, z_age)
     total = (
         w_recon * recon_loss
         + w_age_dyn * age_loss
         + w_class * class_loss
         + w_ortho * ortho
-        # + w_corr_dyn * corr
+        + 0.3 * loss_zage_decor
+        # + 0.3 * decor_res_loss
         # + w_maxz * loss_max_z
     )
 
@@ -207,3 +210,32 @@ def rank_loss(z: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     label_diff = y.unsqueeze(1) - y.unsqueeze(0)
     sign_mismatch = (diff * label_diff < 0).float()
     return sign_mismatch.mean()
+def latent_dimension_decorrelation_loss(z, eps=1e-8):
+    """
+    Penalize correlations among dimensions within one latent space.
+    z: [batch_size, latent_dim]
+    """
+    z = z - z.mean(dim=0, keepdim=True)
+    z = z / (z.std(dim=0, keepdim=True, unbiased=False) + eps)
+
+    corr = torch.matmul(z.T, z) / z.shape[0]
+
+    latent_dim = corr.shape[0]
+    eye = torch.eye(latent_dim, device=z.device)
+
+    off_diag = corr - eye
+
+    return torch.mean(off_diag ** 2)
+
+def residual_age_decorrelation_loss(z_noise, age_true, eps=1e-8):
+    age_true = age_true.view(-1, 1).float()
+
+    z = z_noise - z_noise.mean(dim=0, keepdim=True)
+    a = age_true - age_true.mean(dim=0, keepdim=True)
+
+    z = z / (z.std(dim=0, keepdim=True, unbiased=False) + eps)
+    a = a / (a.std(dim=0, keepdim=True, unbiased=False) + eps)
+
+    corr_per_dim = torch.mean(z * a, dim=0)
+
+    return torch.mean(torch.abs(corr_per_dim))
