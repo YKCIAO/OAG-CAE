@@ -260,7 +260,39 @@ dependencies:
       - nipype==1.8.6
 
 ```
+## Saved latent representations
 
+After training, the encoder-generated latent spaces are saved for each fold:
+
+outputs/
+├── fold1/
+│   ├── latent_train.npz
+│   ├── latent_train.csv
+│   ├── latent_val.npz
+│   ├── latent_val.csv
+│   ├── latent_test.npz
+│   └── latent_test.csv
+
+Each file contains:
+- z_age: age-related latent representation
+- z_noise: residual / nuisance latent representation
+- age_true: chronological age
+- age_pred: predicted age from the Stage 2 regressor
+## Computational requirements and runtime report
+
+For each fold, the pipeline saves:
+
+outputs/fold*/runtime_report.json
+
+The report includes:
+- CPU/GPU information
+- PyTorch/CUDA version
+- number of model parameters
+- train/validation/test sample sizes
+- Stage 1 runtime
+- Stage 2 runtime
+- total fold runtime
+- peak GPU memory usage
 ### Important Notes
 + **Do not use NumPy ≥ 2.0** (ABI incompatibility with PyTorch/SciPy)
 + If CUDA issues occur, start with CPU-only installation

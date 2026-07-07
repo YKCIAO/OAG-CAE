@@ -111,6 +111,8 @@ def build_argparser():
     p.add_argument("--w_age", type=float, default=0.4)
     p.add_argument("--w_ortho", type=float, default=0.2)
     p.add_argument("--w_class", type=float, default=0.75)
+    p.add_argument("--save_latents", action="store_true")
+    p.add_argument("--save_runtime_report", action="store_true")
 
     return p
 
@@ -132,6 +134,8 @@ def main():
         w_age=args.w_age,
         w_ortho=args.w_ortho,
         w_class=args.w_class,
+        save_latents=args.save_latents,
+        save_runtime_report=args.save_runtime_report,
     )
 
     input_dir = Path(args.input_dir)

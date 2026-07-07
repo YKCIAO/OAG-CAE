@@ -108,7 +108,6 @@ def main():
             tau=1.5,
             gate_softmax_dim=2
         )
-                                         gate_softmax_dim=2)
 
         regressor = ConvAgeRegressor(reg_cfg)
         regressor.load_state_dict(torch.load(args.regressor_template.format(fold=fold), map_location="cpu"))
