@@ -67,7 +67,7 @@ def main():
         test_idx = np.arange(start, end)
         train_idx = np.setdiff1d(all_indices, test_idx)
 
-<<<<<<< HEAD
+
         x_train_flat = fc_flat[train_idx]  # (N_train, H*W)
         x_test_flat = fc_flat[test_idx]  # (N_test, H*W)
 
@@ -109,7 +109,7 @@ def main():
             gate_softmax_dim=2
         )
                                          gate_softmax_dim=2)
->>>>>>> ec009e808332423cfd236fad2803221e2b6659bc
+
         regressor = ConvAgeRegressor(reg_cfg)
         regressor.load_state_dict(torch.load(args.regressor_template.format(fold=fold), map_location="cpu"))
         regressor.eval()
