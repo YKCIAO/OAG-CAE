@@ -22,6 +22,7 @@ class OAEConfig:
     dropout: float = 0.15
     n_age_groups: int = 7
     age_noise_sigma: float = 0.02    # noise added to z_age before reg/class
+    tau: float = 1.5
 
 
 class OrthogonalAutoEncoder(nn.Module):
@@ -40,13 +41,13 @@ class OrthogonalAutoEncoder(nn.Module):
       logits: (B,n_age_groups)
     """
 
-    def __init__(self, input_dim: int = 278, z_age_dim: int = 16, z_noise_dim: int = 112, cfg: OAEConfig | None = None):
+    def __init__(self, cfg: OAEConfig | None = None):
         super().__init__()
-        self.cfg = cfg or OAEConfig(input_size=input_dim, z_age_dim=z_age_dim, z_noise_dim=z_noise_dim)
+        self.cfg = cfg
 
         self.z_age_dim = self.cfg.z_age_dim
         self.z_noise_dim = self.cfg.z_noise_dim
-        self.latent_dim = self.z_age_dim + self.z_noise_dim
+        self.latent_dim = self.cfg.z_age_dim + self.cfg.z_noise_dim
 
         # Encoder conv: (1,278,278) -> (32,29,29) with your kernel/stride
         self.encoder = nn.Sequential(
@@ -83,7 +84,7 @@ class OrthogonalAutoEncoder(nn.Module):
         )
 
         # Age regressor from z_age
-        self.regressor = AttentionRegressor(in_dim=self.z_age_dim, tau=1.4)
+        self.regressor = AttentionRegressor(in_dim=self.z_age_dim, tau=self.cfg.tau)
 
         # Age group classifier
         self.classifier = nn.Sequential(

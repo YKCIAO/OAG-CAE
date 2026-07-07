@@ -1,13 +1,11 @@
 # scripts/training.py
 import argparse
 from pathlib import Path
-from typing import List, Sequence, Tuple
-
-import numpy as np
-
 from src.training.datasetFC import FCDataset
 from src.training.train_pipeline import TrainConfig, train_and_eval
 from src.training.utils import reset_seeds
+from typing import Sequence, Tuple, List
+import numpy as np
 
 
 def dataset_ctor(train_x, train_y, val_x, val_y, test_x, test_y):
@@ -16,15 +14,29 @@ def dataset_ctor(train_x, train_y, val_x, val_y, test_x, test_y):
     test_ds  = FCDataset(test_x, test_y, train=False, argument=False)
     return train_ds, val_ds, test_ds
 
+def _filter_by_age(
+    x: np.ndarray,
+    y: np.ndarray,
+    *,
+    max_age: float = 95.0,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Remove subjects with age > max_age. Works for y shape [N] or [N,1]."""
+    y_arr = np.asarray(y)
+    y_flat = y_arr.reshape(-1)  # [N]
+    keep = y_flat <= max_age
 
-from typing import Sequence, Tuple, List
-import numpy as np
+    x_f = x[keep]
+    y_f = y_arr[keep]  # keep original shape
+
+    return x_f, y_f
 
 
 def build_nested_folds_from_group_paths(
     group_paths: Sequence[Tuple[str, str]],
     val_ratio: float = 0.1,
-    seed: int = 1000,
+    seed: int = 111,
+    *,
+    max_age: float = 95.0 * 12,
 ) -> List[Tuple[np.ndarray, np.ndarray,
                 np.ndarray, np.ndarray,
                 np.ndarray, np.ndarray]]:
@@ -37,17 +49,18 @@ def build_nested_folds_from_group_paths(
         - From the remaining groups (training pool),
           a subset is split off as VALIDATION.
 
-    Returns a list of tuples:
-        (train_x, train_y,
-         val_x,   val_y,
-         test_x,  test_y)
+    Returns:
+        (train_x, train_y, val_x, val_y, test_x, test_y)
     """
 
-    # ---------- load all groups ----------
+    # ---------- load + filter each group ----------
     xs, ys = [], []
     for fc_path, label_path in group_paths:
-        xs.append(np.load(fc_path))
-        ys.append(np.load(label_path))
+        x = np.load(fc_path)
+        y = np.load(label_path)
+        x, y = _filter_by_age(x, y, max_age=max_age)  # <- delete old > 95 years
+        xs.append(x)
+        ys.append(y)
 
     k = len(xs)
     rng = np.random.RandomState(seed)
@@ -63,7 +76,7 @@ def build_nested_folds_from_group_paths(
         pool_y = np.concatenate([ys[j] for j in range(k) if j != test_idx], axis=0)
 
         # ---------- nested train / val split ----------
-        n = len(pool_y)
+        n = len(pool_y.reshape(-1))
         idx = np.arange(n)
         rng.shuffle(idx)
 
@@ -76,21 +89,15 @@ def build_nested_folds_from_group_paths(
         train_x, train_y = pool_x[train_idx], pool_y[train_idx]
         val_x, val_y     = pool_x[val_idx],   pool_y[val_idx]
 
-        folds.append(
-            (train_x, train_y,
-             val_x,   val_y,
-             test_x,  test_y)
-        )
+        folds.append((train_x, train_y, val_x, val_y, test_x, test_y))
 
     return folds
-
-
 
 def build_argparser():
     p = argparse.ArgumentParser()
 
     # basic
-    p.add_argument("--seed", type=int, default=2574)
+    p.add_argument("--seed", type=int, default=1024)
     p.add_argument("--device", type=str, default="cuda")
     p.add_argument("--out_dir", type=str, default="/home/bio/PycharmProjects/OAG-/result/")
     p.add_argument("--input_dir", type=str, default="/nfsd/biopetmri4/Users/YikangCao/HCP_project/yk_autoencoder/crossvalid_dataset/")
@@ -138,7 +145,7 @@ def main():
         for i in range(1, 6)
     ]
 
-    folds = build_nested_folds_from_group_paths(group_paths)
+    folds = build_nested_folds_from_group_paths(group_paths, max_age=1140.0)
 
     mean_mae = train_and_eval(
         folds=folds,

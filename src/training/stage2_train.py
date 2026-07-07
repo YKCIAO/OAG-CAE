@@ -25,7 +25,8 @@ def predict_stage2_simple(encoder, regressor, loader, device) -> List[Dict[str, 
     rows: List[Dict[str, float]] = []
     with torch.no_grad():
         for batch in loader:
-            # 兼容你的 batch 格式
+            # This let the dateset can load different structure,
+            # based on these structure you can add such VBM, freesurfer features etc.
             if len(batch) == 3:
                 x, age_true, _ = batch
             elif len(batch) == 5:
@@ -104,7 +105,7 @@ def train_stage2(
     early_stop = cfg.early_stop_patience
 
     for epoch in range(cfg.epochs_stage2):
-        encoder.eval()  # stage2 默认冻结 encoder；如需 finetune 改 encoder.train()
+        encoder.eval()  # stage2 eval encoder
         regressor.train()
 
         for batch in train_loader:
@@ -123,7 +124,7 @@ def train_stage2(
                 z_age, z_noise = encoder.encode(x)
                 noise = torch.randn_like(z_age) * 0.02
                 z_age = z_age + noise
-                age_smooth = age_true + torch.randn_like(age_true) * 0.4
+                age_smooth = age_true + torch.randn_like(age_true) * 0.5
             pred = regressor(z_age)  # (B,) or (B,1)
             pred = pred.view(-1)
             loss = F.l1_loss(pred, age_smooth.float().view(-1))
@@ -142,11 +143,12 @@ def train_stage2(
             # --------------------
             # --- val metric for early stopping ---
             val_mae = _eval_stage2(encoder, regressor, val_loader, device)
+            train_mae = _eval_stage2(encoder, regressor, train_loader, device)
             # --- report every 20 epochs ---
             if cfg.verbose:
                 print(
                     f"[Stage2] epoch {epoch+1}/{cfg.epochs_stage2} "
-                    f"val_mae={val_mae:.4f} best={best_mae:.4f} "
+                    f"train_mae={train_mae:.4f} val_mae={val_mae:.4f} best={best_mae:.4f} "
                     f"patience={patience}/{early_stop}"
                 )
             improved = (best_mae - val_mae) > min_delta
@@ -177,11 +179,11 @@ def train_stage2(
     if cfg.verbose:
         print(f"[Stage2][TEST] mae={test_mae:.4f} n={len(test_rows)}")
 
-    # 你可能需要扩展 Stage2Result 来带上 test 结果；推荐这么做：
+    # Stage2Result is a struct constructed on the above
     return Stage2Result(
         best_state_dict=best_sd,
         best_val_mae=float(best_mae),
-        # ↓↓↓ 若 Stage2Result 支持这些字段就保留；不支持就删掉并在外部接收 test_rows
+
         test_mae=float(test_mae),
         test_rows=test_rows,
         train_rows=train_rows,

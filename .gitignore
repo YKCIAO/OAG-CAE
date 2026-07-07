@@ -22,6 +22,7 @@ data/
 
 # Models / outputs
 *.pth
+cripts"
 outputs/
 results/
 logs/

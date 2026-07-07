@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from sklearn.decomposition import PCA
 
-from src.models.OAG_CAE import OrthogonalAutoEncoder
+from src.models.OAG_CAE import OrthogonalAutoEncoder,OAEConfig
 from src.models.regressors import ConvAgeRegressor, ConvAgeRegressorConfig
 from src.explain.model_adapters import PCA2AgeWrapper
 from src.explain.pca_shap import KernelShapConfig, run_kernelshap_on_pca, backproject_shap_to_fc
@@ -67,8 +67,9 @@ def main():
         test_idx = np.arange(start, end)
         train_idx = np.setdiff1d(all_indices, test_idx)
 
-        x_train_flat = fc_flat[train_idx]   # (N_train, H*W)
-        x_test_flat = fc_flat[test_idx]     # (N_test, H*W)
+<<<<<<< HEAD
+        x_train_flat = fc_flat[train_idx]  # (N_train, H*W)
+        x_test_flat = fc_flat[test_idx]  # (N_test, H*W)
 
         # -----------------------------
         # Fit PCA on training data only
@@ -76,8 +77,8 @@ def main():
         k = min(args.pca_components, x_train_flat.shape[0])
         pca = PCA(n_components=k, svd_solver="randomized", random_state=42)
 
-        x_train_pca = pca.fit_transform(x_train_flat)   # fit on training only
-        x_test_pca = pca.transform(x_test_flat)         # apply to test
+        x_train_pca = pca.fit_transform(x_train_flat)  # fit on training only
+        x_test_pca = pca.transform(x_test_flat)  # apply to test
 
         # Save fold-specific PCA for reproducibility
         save_npy(str(fold_out / "pca_components.npy"), pca.components_)
@@ -88,17 +89,27 @@ def main():
         # -----------------------------
         # Load fold models
         # -----------------------------
-        encoder = OrthogonalAutoEncoder(input_dim=278, z_age_dim=32, z_noise_dim=32)
-        encoder.load_state_dict(torch.load(args.encoder_template.format(fold=fold), map_location="cpu"))
+        OAG_cfg = OAEConfig(
+            input_size=278,
+            z_age_dim=32,
+            z_noise_dim=32,
+            tau=1.5
+        )
+        encoder = OrthogonalAutoEncoder(cfg=OAG_cfg)
+        encoder.load_state_dict(
+            torch.load(args.encoder_template.format(fold=fold), map_location="cpu")
+        )
         encoder.eval()
 
         reg_cfg = ConvAgeRegressorConfig(
             in_dim=32,
             hidden_channels=1,
             length=32,
-            tau=2.5,
+            tau=1.5,
             gate_softmax_dim=2
         )
+                                         gate_softmax_dim=2)
+>>>>>>> ec009e808332423cfd236fad2803221e2b6659bc
         regressor = ConvAgeRegressor(reg_cfg)
         regressor.load_state_dict(torch.load(args.regressor_template.format(fold=fold), map_location="cpu"))
         regressor.eval()

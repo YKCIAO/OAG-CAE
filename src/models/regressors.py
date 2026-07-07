@@ -24,9 +24,9 @@ class TemperatureSoftmax(nn.Module):
 @dataclass
 class AttentionRegressorConfig:
     in_dim: int
-    tau: float = 1.4
+    tau: float = 1.5
     scale_by_dim: bool = True
-    dropout: float = 0.1
+    dropout: float = 0.15
 
 
 class AttentionRegressor(nn.Module):
@@ -127,6 +127,7 @@ class ConvAgeRegressor(nn.Module):
             blocks.append(
                 nn.Sequential(
                     nn.Conv1d(cfg.hidden_channels, cfg.hidden_channels, kernel_size=1, padding=0),
+                    nn.Dropout(cfg.dropout),
                     nn.GELU(),
                     nn.Conv1d(cfg.hidden_channels, cfg.hidden_channels, kernel_size=k, padding=k // 2, bias=True),
                     nn.GELU(),
@@ -157,8 +158,8 @@ class ConvAgeRegressor(nn.Module):
         feats = [block(x_gated) for block in self.conv_blocks]  # list of (B,C,L)
         fused = torch.stack(feats, dim=0).mean(dim=0)  # (B,C,L)
 
-        pred = self.reg_head(fused).squeeze(1) + self.bias_shift  # (B,)
+        pred = self.reg_head(fused).squeeze(1) # (B,)
 
-        return pred
+        return pred + self.bias_shift
 
 # src/models/regressors.py
