@@ -133,7 +133,7 @@ def orthogonal_guided_loss(
     w_corr_dyn = w_corr
 
     loss_zage_decor = latent_dimension_decorrelation_loss(z_age)
-    decor_res_loss = residual_age_decorrelation_loss(z_noise, z_age)
+    #decor_res_loss = residual_age_decorrelation_loss(z_noise, age_true)
     total = (
         w_recon * recon_loss
         + w_age_dyn * age_loss
