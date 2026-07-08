@@ -64,7 +64,7 @@ class TrainConfig:
     w_ortho: float = 0.2
     w_class: float = 0.1
 
-    grad_clip: float = 5.0
+    grad_clip: float = 4.0
     verbose: bool = True
     min_delta: float = 0.0
 
@@ -89,38 +89,18 @@ def _resolve_device(cfg: TrainConfig) -> torch.device:
 
 
 def _build_loaders(train_ds, val_ds, test_ds, cfg: TrainConfig) -> Tuple[DataLoader, DataLoader, DataLoader]:
-    train_batch_size = max(1, int(len(train_ds) / cfg.batch_num))
-
-    use_persistent_workers = cfg.num_workers > 0
-
     train_loader = DataLoader(
-        train_ds,
-        batch_size=train_batch_size,
-        shuffle=True,
-        num_workers=cfg.num_workers,
-        pin_memory=True,
-        persistent_workers=use_persistent_workers,
-        drop_last=True
+        train_ds, batch_size=int(len(train_ds)/TrainConfig.batch_num), shuffle=True,
+        num_workers=cfg.num_workers, pin_memory=True, persistent_workers=True, drop_last=True
     )
-
     val_loader = DataLoader(
-        val_ds,
-        batch_size=len(val_ds),
-        shuffle=False,
-        num_workers=cfg.num_workers,
-        pin_memory=True,
-        persistent_workers=use_persistent_workers
+        val_ds, batch_size=int(len(val_ds)), shuffle=False,
+        num_workers=cfg.num_workers, pin_memory=True, persistent_workers=True
     )
-
     test_loader = DataLoader(
-        test_ds,
-        batch_size=len(test_ds),
-        shuffle=False,
-        num_workers=cfg.num_workers,
-        pin_memory=True,
-        persistent_workers=use_persistent_workers
+        test_ds, batch_size=int(len(test_ds)), shuffle=False,
+        num_workers=cfg.num_workers, pin_memory=True, persistent_workers=True
     )
-
     return train_loader, val_loader, test_loader
 
 
