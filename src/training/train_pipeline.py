@@ -89,18 +89,38 @@ def _resolve_device(cfg: TrainConfig) -> torch.device:
 
 
 def _build_loaders(train_ds, val_ds, test_ds, cfg: TrainConfig) -> Tuple[DataLoader, DataLoader, DataLoader]:
+    train_batch_size = max(1, int(len(train_ds) / cfg.batch_num))
+
+    use_persistent_workers = cfg.num_workers > 0
+
     train_loader = DataLoader(
-        train_ds, batch_size=int(len(train_ds)/TrainConfig.batch_num), shuffle=True,
-        num_workers=cfg.num_workers, pin_memory=True, persistent_workers=True, drop_last=True
+        train_ds,
+        batch_size=train_batch_size,
+        shuffle=True,
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        persistent_workers=use_persistent_workers,
+        drop_last=True
     )
+
     val_loader = DataLoader(
-        val_ds, batch_size=int(len(val_ds)), shuffle=False,
-        num_workers=cfg.num_workers, pin_memory=True, persistent_workers=True
+        val_ds,
+        batch_size=len(val_ds),
+        shuffle=False,
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        persistent_workers=use_persistent_workers
     )
+
     test_loader = DataLoader(
-        test_ds, batch_size=int(len(test_ds)), shuffle=False,
-        num_workers=cfg.num_workers, pin_memory=True, persistent_workers=True
+        test_ds,
+        batch_size=len(test_ds),
+        shuffle=False,
+        num_workers=cfg.num_workers,
+        pin_memory=True,
+        persistent_workers=use_persistent_workers
     )
+
     return train_loader, val_loader, test_loader
 
 
@@ -265,60 +285,59 @@ def train_and_eval(
         })
         torch.save(s1.best_state_dict, f'../result/fold{i + 1}/fold{i + 1}_oag_cae_bestvalid.pth')
         torch.save(s2.best_state_dict, f'../result/fold{i + 1}/fold{i + 1}_regressor_bestvalid.pth')
+        fold_runtime_sec = fold_timer.stop()
+        peak_memory_mb = get_peak_memory_mb(device)
+
+        runtime_report = {
+            "fold": i + 1,
+            "system": get_system_info(device),
+            "data": {
+                "n_train": int(len(train_ds)),
+                "n_val": int(len(val_ds)),
+                "n_test": int(len(test_ds)),
+                "input_dim": int(cfg.input_dim),
+                "z_age_dim": int(cfg.z_age_dim),
+                "z_noise_dim": int(cfg.z_noise_dim),
+            },
+            "training_config": {
+                "epochs_stage1": int(cfg.epochs_stage1),
+                "epochs_stage2": int(cfg.epochs_stage2),
+                "lr_stage1": float(cfg.lr_stage1),
+                "lr_stage2": float(cfg.lr_stage2),
+                "batch_num": int(cfg.batch_num),
+                "early_stop_patience": int(cfg.early_stop_patience),
+                "device": str(device),
+            },
+            "model_parameters": {
+                "encoder_total": int(count_total_parameters(encoder)),
+                "encoder_trainable": int(count_trainable_parameters(encoder)),
+                "regressor_total": int(count_total_parameters(regressor)),
+                "regressor_trainable": int(count_trainable_parameters(regressor)),
+            },
+            "runtime": {
+                "stage1_runtime_sec": float(stage1_runtime_sec),
+                "stage2_runtime_sec": float(stage2_runtime_sec),
+                "fold_total_runtime_sec": float(fold_runtime_sec),
+                "stage1_runtime_min": float(stage1_runtime_sec / 60),
+                "stage2_runtime_min": float(stage2_runtime_sec / 60),
+                "fold_total_runtime_min": float(fold_runtime_sec / 60),
+            },
+            "memory": {
+                "peak_gpu_memory_mb": float(peak_memory_mb),
+            },
+            "performance": {
+                "stage1_best_val_loss": float(s1.best_val_loss),
+                "stage1_test_loss": float(s1.test_loss),
+                "stage2_best_val_mae": float(s2.best_val_mae),
+                "stage2_test_mae": float(s2.test_mae),
+            },
+        }
+
+        save_json(
+            os.path.join(save_dir, "runtime_report.json"),
+            runtime_report
+        )
     mean_mae = float(np.mean(fold_mae))
-
-    fold_runtime_sec = fold_timer.stop()
-    peak_memory_mb = get_peak_memory_mb(device)
-
-    runtime_report = {
-        "fold": i + 1,
-        "system": get_system_info(device),
-        "data": {
-            "n_train": int(len(train_ds)),
-            "n_val": int(len(val_ds)),
-            "n_test": int(len(test_ds)),
-            "input_dim": int(cfg.input_dim),
-            "z_age_dim": int(cfg.z_age_dim),
-            "z_noise_dim": int(cfg.z_noise_dim),
-        },
-        "training_config": {
-            "epochs_stage1": int(cfg.epochs_stage1),
-            "epochs_stage2": int(cfg.epochs_stage2),
-            "lr_stage1": float(cfg.lr_stage1),
-            "lr_stage2": float(cfg.lr_stage2),
-            "batch_num": int(cfg.batch_num),
-            "early_stop_patience": int(cfg.early_stop_patience),
-            "device": str(device),
-        },
-        "model_parameters": {
-            "encoder_total": int(count_total_parameters(encoder)),
-            "encoder_trainable": int(count_trainable_parameters(encoder)),
-            "regressor_total": int(count_total_parameters(regressor)),
-            "regressor_trainable": int(count_trainable_parameters(regressor)),
-        },
-        "runtime": {
-            "stage1_runtime_sec": float(stage1_runtime_sec),
-            "stage2_runtime_sec": float(stage2_runtime_sec),
-            "fold_total_runtime_sec": float(fold_runtime_sec),
-            "stage1_runtime_min": float(stage1_runtime_sec / 60),
-            "stage2_runtime_min": float(stage2_runtime_sec / 60),
-            "fold_total_runtime_min": float(fold_runtime_sec / 60),
-        },
-        "memory": {
-            "peak_gpu_memory_mb": float(peak_memory_mb),
-        },
-        "performance": {
-            "stage1_best_val_loss": float(s1.best_val_loss),
-            "stage1_test_loss": float(s1.test_loss),
-            "stage2_best_val_mae": float(s2.best_val_mae),
-            "stage2_test_mae": float(s2.test_mae),
-        },
-    }
-
-    save_json(
-        os.path.join(save_dir, "runtime_report.json"),
-        runtime_report
-    )
     save_json(f"{cfg.out_dir}/cv_summary.json", {"mean_mae": mean_mae, "fold_mae": fold_mae})
     print(f"\n===== CV DONE | mean MAE = {mean_mae:.4f} =====")
     return mean_mae
