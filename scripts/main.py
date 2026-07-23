@@ -9,7 +9,7 @@ import numpy as np
 
 
 def dataset_ctor(train_x, train_y, val_x, val_y, test_x, test_y):
-    train_ds = FCDataset(train_x, train_y, train=True, argument=True)
+    train_ds = FCDataset(train_x, train_y, train=True, argument=False)
     val_ds   = FCDataset(val_x, val_y, train=False, argument=False)
     test_ds  = FCDataset(test_x, test_y, train=False, argument=False)
     return train_ds, val_ds, test_ds

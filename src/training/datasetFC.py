@@ -156,12 +156,12 @@ class fMRIDataset(_BaseDataset):
         fc = apply_triangle_keep(fc, upper=self.keep_upper, k=self.triangle_k)
         ec = apply_triangle_keep(ec, upper=self.keep_upper, k=self.triangle_k)
 
-        # optional augmentation on FC only (match your original; EC noise was commented out)
-        fc = self._maybe_augment(fc)
+
 
         fc_mask = make_mask_nonzero(fc)
         ec_mask = make_mask_nonzero(ec)
-
+        # optional augmentation on FC only (match your original; EC noise was commented out)
+        fc = self._maybe_augment(fc)
         label_raw = self.FC_labels[index]
         label_years = self.label_cfg.to_years(label_raw)
 
@@ -203,10 +203,9 @@ class FCDataset(_BaseDataset):
     def __getitem__(self, index: int):
         fc = self.FC_matrices[index]
         fc = apply_triangle_keep(fc, upper=self.keep_upper, k=self.triangle_k)
-        fc = self._maybe_augment(fc)
 
         fc_mask = make_mask_nonzero(fc)
-
+        fc = self._maybe_augment(fc)
         label_raw = self.FC_labels[index]
         label_years = self.label_cfg.to_years(label_raw)
 
